@@ -3421,6 +3421,21 @@ main (void)
   for (request_count = 0; requests[request_count].name; request_count++);
   for (response_count = 0; responses[response_count].name; response_count++);
 
+  printf("xxx1\n");
+  test_simple("\r\n\r\n"
+              "GET / HTTP/1.1\r\n"
+              "Content-Type: text/plain\r\n"
+              "Content-Length: 5\r\n"
+              "\r\n"
+              "fooba"
+              "\r\n\n\n\r\n"
+              "GET / HTTP/1.1\r\n"
+              "Content-Type: text/plain\r\n"
+              "Content-Length: 5\r\n"
+              "\r\n"
+              "blabl",
+              HPE_OK);
+  printf("xxx2\n");
   //// API
   test_preserve_data();
   test_parse_url();

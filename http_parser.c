@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stdio.h>
 
 #ifndef ULLONG_MAX
 # define ULLONG_MAX ((uint64_t) -1) /* 2^64-1 */
@@ -80,7 +81,7 @@ do {                                                                 \
 #define CALLBACK_NOTIFY_(FOR, ER)                                    \
 do {                                                                 \
   assert(HTTP_PARSER_ERRNO(parser) == HPE_OK);                       \
-                                                                     \
+  printf("CALLBACK_NOTIFY_ " #FOR "\n" ); \
   if (LIKELY(settings->on_##FOR)) {                                  \
     parser->state = CURRENT_STATE();                                 \
     if (UNLIKELY(0 != settings->on_##FOR(parser))) {                 \
@@ -107,6 +108,7 @@ do {                                                                 \
   assert(HTTP_PARSER_ERRNO(parser) == HPE_OK);                       \
                                                                      \
   if (FOR##_mark) {                                                  \
+    printf("CALLBACK_DATA_ " #FOR " mark[0]=%c len=%d\n", FOR##_mark[0],(int) (LEN) ); \
     if (LIKELY(settings->on_##FOR)) {                                \
       parser->state = CURRENT_STATE();                               \
       if (UNLIKELY(0 !=                                              \
