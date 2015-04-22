@@ -1625,6 +1625,75 @@ const struct message responses[] =
 , {.name= NULL } /* sentinel */
 };
 
+/* Test for execution of on_message_callback regardless of the request/response
+ * correctness */
+/* Invalid response */
+const struct message on_message_begin_cb_test[] =
+{ {.name= "Invalid response"
+  ,.type= HTTP_RESPONSE
+  ,.raw= "ZZZZZ\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  },
+
+/* Invalid request */
+  {.name= "Invalid request"
+  ,.type= HTTP_REQUEST
+  ,.raw= "ZZZZZ\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  },
+
+/* Invalid unspecified request/response */
+  {.name= "Invalid 'both' 'request/response'"
+  ,.type= HTTP_BOTH
+  ,.raw= "ZZZZZ\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  },
+
+/* Valid 200 response */
+  {.name= "Simple valid 200 reponse"
+  ,.type= HTTP_RESPONSE
+  ,.raw= "HTTP/1.1 200 OK\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  },
+
+/* Valid request */
+  {.name= "Simple valid request"
+  ,.type= HTTP_REQUEST
+  ,.raw= "GET / HTTP/1.1\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  },
+
+/* Valid unspecified request */
+  {.name= "Simple valid 'both' request"
+  ,.type= HTTP_BOTH
+  ,.raw= "GET / HTTP/1.1\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  },
+
+/* Valid unspecified response */
+  {.name= "Simple valid 'both' response"
+  ,.type= HTTP_BOTH
+  ,.raw= "GET / HTTP/1.1\r\n"
+  ,.should_keep_alive= FALSE
+  ,.message_complete_on_eof= FALSE
+  ,.body= ""
+  }
+
+, {.name= NULL } /* sentinel */
+};
+
 /* strnlen() is a POSIX.2008 addition. Can't rely on it being available so
  * define it ourselves.
  */
@@ -1779,7 +1848,7 @@ int
 message_begin_cb (http_parser *p)
 {
   assert(p == parser);
-  messages[num_messages].message_begin_cb_called = TRUE;
+  messages[num_messages].message_begin_cb_called++;
   return 0;
 }
 
@@ -3398,6 +3467,41 @@ test:
   parser_free();
 }
 
+/* Verify that on_message_begin callback is called regardless of correctness of
+ * the message */
+void
+test_on_message_begin_cb(const struct message *message)
+{
+  int msglen;
+  int nparsed;
+
+  parser_init(message->type);
+  assert(messages[num_messages].message_begin_cb_called == 0);
+  msglen = strlen(message->raw);
+  nparsed = parse(message->raw, msglen);
+  //assert(messages[num_messages].message_begin_cb_called == 1);
+  printf("XXXX msglen=%d nparsed=%d num_messages=%d msgbegin=%d msgcomplete=%d\n",
+    msglen, nparsed, num_messages, 
+    messages[num_messages].message_begin_cb_called,
+    messages[num_messages].message_complete_cb_called);
+  parser_free();
+}
+
+void test_on_message_begin()
+{
+  int on_message_begin_cb_count;
+  int i;
+
+  for (on_message_begin_cb_count = 0;
+       on_message_begin_cb_test[on_message_begin_cb_count].name;
+       on_message_begin_cb_count++);
+
+  /// TESTING ON_MESSAGE_BEGIN CALLS
+  for (i = 0 ; i < on_message_begin_cb_count; i++) {
+    test_on_message_begin_cb(&on_message_begin_cb_test[i]);
+  }
+}
+
 int
 main (void)
 {
@@ -3420,6 +3524,8 @@ main (void)
 
   for (request_count = 0; requests[request_count].name; request_count++);
   for (response_count = 0; responses[response_count].name; response_count++);
+
+  test_on_message_begin();
 
   //// API
   test_preserve_data();
